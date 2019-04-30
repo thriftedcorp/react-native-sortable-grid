@@ -64,7 +64,7 @@ class SortableGrid extends Component {
               itemWrapperStyle = { this._getItemWrapperStyle(key) }
               deletionView = { this._getDeletionView(key) }
               inactive = { item.props.inactive }
-              fixed = { item.props.fixed }
+              fixed = { item.props.fixed } 
             >
               {item}
             </Block>
@@ -364,7 +364,7 @@ class SortableGrid extends Component {
     this.panCapture = true
     this.onDragStart( this.itemOrder[key] )
     this.setState({ activeBlock: key })
-    this._defaultDragActivationWiggle()
+    //this._defaultDragActivationWiggle()
   }
 
   handleTap = ({ onTap = NULL_FN, onDoubleTap = NULL_FN }) => () => {
