@@ -20,28 +20,31 @@ const NULL_FN                         = () => {}
 
 class Block extends Component {
 
-  render = () =>
-    <Animated.View
-      style = { this.props.style }
-      onLayout = { this.props.onLayout }
-      {...this.props.panHandlers}
-    >
-      <TouchableWithoutFeedback
-        style          = {{ flex: 1 }}
-        delayLongPress = { this.props.delayLongPress }
-        onLongPress    = { () => (this.props.inactive || this.props.fixed) || this.props.onLongPress() }
-        onPress        = { () => this.props.inactive || this.props.onPress() }>
-
-          <View style={styles.itemImageContainer}>
-            <View style={ this.props.itemWrapperStyle }>
-              {this.props.children}
+  render() {
+    alert("voila");
+    return (
+      <Animated.View
+        style = { this.props.style }
+        onLayout = { this.props.onLayout }
+        {...this.props.panHandlers}
+      >
+        <TouchableWithoutFeedback
+          style          = {{ flex: 1 }}
+          delayLongPress = { this.props.delayLongPress }
+          onLongPress    = { () => (this.props.inactive || this.props.fixed) || this.props.onLongPress() }
+          onPress        = { () => this.props.inactive || this.props.onPress() }>
+  
+            <View style={styles.itemImageContainer}>
+              <View style={ this.props.itemWrapperStyle }>
+                {this.props.children}
+              </View>
+              { this.props.deletionView }
             </View>
-            { this.props.deletionView }
-          </View>
-
-      </TouchableWithoutFeedback>
-    </Animated.View>
-
+  
+        </TouchableWithoutFeedback>
+      </Animated.View>  
+    );
+  }
 }
 
 class SortableGrid extends Component {
