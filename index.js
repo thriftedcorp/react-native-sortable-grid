@@ -21,7 +21,6 @@ const NULL_FN                         = () => {}
 class Block extends Component {
 
   render() {
-    alert("voila");
     return (
       <Animated.View
         style = { this.props.style }
@@ -138,6 +137,10 @@ class SortableGrid extends Component {
   componentWillReceiveProps = (properties) => this.handleNewProps(properties)
 
   handleNewProps = (properties) => {
+    if (_.size(properties.children) !== _.size(this.old_properties.children)) {
+      this.itemOrder = [];
+    }
+    this.old_properties = properties;
     this._assignReceivedPropertiesIntoThis(properties)
     this._saveItemOrder(properties.children)
     this._removeDisappearedChildren(properties.children)
