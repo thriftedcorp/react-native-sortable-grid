@@ -6,17 +6,18 @@ import {
   PanResponder,
   Image,
   View
-} from 'react-native'
+}
+from 'react-native'
 
 import _ from 'lodash'
 
 // Default values
-const ITEMS_PER_ROW                   = 4
-const DRAG_ACTIVATION_TRESHOLD        = 200 // Milliseconds
-const BLOCK_TRANSITION_DURATION       = 300 // Milliseconds
+const ITEMS_PER_ROW = 4
+const DRAG_ACTIVATION_TRESHOLD = 200 // Milliseconds
+const BLOCK_TRANSITION_DURATION = 300 // Milliseconds
 const ACTIVE_BLOCK_CENTERING_DURATION = 200 // Milliseconds
-const DOUBLETAP_TRESHOLD              = 150 // Milliseconds
-const NULL_FN                         = () => {}
+const DOUBLETAP_TRESHOLD = 150 // Milliseconds
+const NULL_FN = () => {}
 
 class Block extends Component {
 
@@ -41,15 +42,15 @@ class Block extends Component {
             </View>
   
         </TouchableWithoutFeedback>
-      </Animated.View>  
+      </Animated.View>
     );
   }
 }
 
 class SortableGrid extends Component {
 
-    render = () =>
-      <Animated.View
+  render = () =>
+    <Animated.View
         style={ this._getGridStyle() }
         onLayout={this.assessGridSize}
       >
@@ -76,34 +77,34 @@ class SortableGrid extends Component {
   constructor() {
     super()
 
-    this.blockTransitionDuration      = BLOCK_TRANSITION_DURATION
+    this.blockTransitionDuration = BLOCK_TRANSITION_DURATION
     this.activeBlockCenteringDuration = ACTIVE_BLOCK_CENTERING_DURATION
-    this.itemsPerRow                  = ITEMS_PER_ROW
-    this.dragActivationTreshold       = DRAG_ACTIVATION_TRESHOLD
-    this.doubleTapTreshold            = DOUBLETAP_TRESHOLD
-    this.onDragRelease                = NULL_FN
-    this.onDragStart                  = NULL_FN
-    this.onDeleteItem                 = NULL_FN
-    this.dragStartAnimation           = null
+    this.itemsPerRow = ITEMS_PER_ROW
+    this.dragActivationTreshold = DRAG_ACTIVATION_TRESHOLD
+    this.doubleTapTreshold = DOUBLETAP_TRESHOLD
+    this.onDragRelease = NULL_FN
+    this.onDragStart = NULL_FN
+    this.onDeleteItem = NULL_FN
+    this.dragStartAnimation = null
 
-    this.rows              = null
-    this.dragPosition      = null
+    this.rows = null
+    this.dragPosition = null
     this.activeBlockOffset = null
-    this.blockWidth        = null
-    this.blockHeight       = null
-    this.itemWidth         = null
-    this.itemHeight         = null
-    this.gridHeightTarget  = null
-    this.ghostBlocks       = []
-    this.itemOrder         = []
-    this.panCapture        = false
-    this.items             = []
+    this.blockWidth = null
+    this.blockHeight = null
+    this.itemWidth = null
+    this.itemHeight = null
+    this.gridHeightTarget = null
+    this.ghostBlocks = []
+    this.itemOrder = []
+    this.panCapture = false
+    this.items = []
     this.initialLayoutDone = false
-    this.initialDragDone   = false
+    this.initialDragDone = false
 
-    this.tapTimer          = null
-    this.tapIgnore         = false
-    this.doubleTapWait     = false
+    this.tapTimer = null
+    this.tapIgnore = false
+    this.doubleTapWait = false
 
     this.state = {
       gridLayout: null,
@@ -134,15 +135,18 @@ class SortableGrid extends Component {
 
   componentWillUnmount = () => { if (this.tapTimer) clearTimeout(this.tapTimer) }
 
-  componentWillReceiveProps = (properties) => this.handleNewProps(properties)
+  componentWillReceiveProps = (properties) => this.handleNewProps(properties, true)
 
-  handleNewProps = (properties) => {
-    if (_.size(properties.children) !== _.size(this.old_properties.children)) {
+  handleNewProps = (properties, is_received_props) => {
+    let is_updated = false;
+    if (_.size(properties.children) !== (this.old_properties ? _.size(this.old_properties.children) : 0)) {
       this.itemOrder = [];
+      this.items = [];
+      is_updated = true;
     }
     this.old_properties = properties;
     this._assignReceivedPropertiesIntoThis(properties)
-    this._saveItemOrder(properties.children)
+    this._saveItemOrder(properties.children, is_updated)
     this._removeDisappearedChildren(properties.children)
   }
 
@@ -157,11 +161,11 @@ class SortableGrid extends Component {
     }
   }
 
-  onMoveBlock = (evt, {moveX, moveY, dx, dy}) => {
+  onMoveBlock = (evt, { moveX, moveY, dx, dy }) => {
     if (this.state.activeBlock != null && this._blockPositionsSet()) {
       if (this.state.deleteModeOn) return this.deleteModeMove({ x: moveX, y: moveY })
 
-      if (dx != 0 || dy != 0) this.initialDragDone = true
+      if (dx != 0 ||  dy != 0) this.initialDragDone = true
 
       let yChokeAmount = Math.max(0, (this.activeBlockOffset.y + moveY) - (this.state.gridLayout.height - this.blockHeight))
       let xChokeAmount = Math.max(0, (this.activeBlockOffset.x + moveX) - (this.state.gridLayout.width - this.blockWidth))
@@ -176,7 +180,7 @@ class SortableGrid extends Component {
 
       let closest = this.state.activeBlock
       let closestDistance = distanceToOrigin
-      this.state.blockPositions.forEach( (block, index) => {
+      this.state.blockPositions.forEach((block, index) => {
         if (index !== this.state.activeBlock && block.origin) {
           let blockPosition = block.origin
           let distance = this._getDistanceTo(blockPosition)
@@ -190,7 +194,7 @@ class SortableGrid extends Component {
         }
       })
 
-      this.ghostBlocks.forEach( ghostBlockPosition => {
+      this.ghostBlocks.forEach(ghostBlockPosition => {
         let distance = this._getDistanceTo(ghostBlockPosition)
         if (distance < closestDistance) {
           closest = this.state.activeBlock
@@ -201,8 +205,7 @@ class SortableGrid extends Component {
       if (closest !== this.state.activeBlock) {
         // animate the activeBlock closest block to its previous position
         Animated.timing(
-          this._getBlock(closest).currentPosition,
-          {
+          this._getBlock(closest).currentPosition, {
             toValue: this._getActiveBlock().origin,
             duration: this.blockTransitionDuration
           }
@@ -233,30 +236,28 @@ class SortableGrid extends Component {
   deleteBlock = () => {
     this.setState({ deleteBlock: this.state.activeBlock })
     this.blockAnimateFadeOut()
-    .then( () => {
-      let activeBlock = this.state.activeBlock
-      this.setState({ activeBlock: null, deleteBlock: null }, () => {
-        this.onDeleteItem({ item: this.itemOrder[ activeBlock ] })
-        this.deleteBlocks([ activeBlock ])
-        this.afterDragRelease()
+      .then(() => {
+        let activeBlock = this.state.activeBlock
+        this.setState({ activeBlock: null, deleteBlock: null }, () => {
+          this.onDeleteItem({ item: this.itemOrder[activeBlock] })
+          this.deleteBlocks([activeBlock])
+          this.afterDragRelease()
+        })
       })
-    })
   }
 
   blockAnimateFadeOut = () => {
     this.state.deleteBlockOpacity.setValue(1)
-    return new Promise( (resolve, reject) => {
+    return new Promise((resolve, reject) => {
       Animated.timing(
-        this.state.deleteBlockOpacity,
-        { toValue: 0, duration: 2 * this.activeBlockCenteringDuration }
+        this.state.deleteBlockOpacity, { toValue: 0, duration: 2 * this.activeBlockCenteringDuration }
       ).start(resolve)
     })
   }
 
   animateBlockMove = (blockIndex, position) => {
     Animated.timing(
-      this._getBlock(blockIndex).currentPosition,
-      {
+      this._getBlock(blockIndex).currentPosition, {
         toValue: position,
         duration: this.blockTransitionDuration
       }
@@ -267,8 +268,7 @@ class SortableGrid extends Component {
     let activeBlockCurrentPosition = this._getActiveBlock().currentPosition
     activeBlockCurrentPosition.flattenOffset()
     Animated.timing(
-      activeBlockCurrentPosition,
-      {
+      activeBlockCurrentPosition, {
         toValue: this._getActiveBlock().origin,
         duration: this.activeBlockCenteringDuration
       }
@@ -276,13 +276,13 @@ class SortableGrid extends Component {
   }
 
   afterDragRelease = () => {
-    let itemOrder = _.sortBy( this.itemOrder, item => item.order )
+    let itemOrder = _.sortBy(this.itemOrder, item => item.order)
     this.onDragRelease({ itemOrder })
     this.setState({ activeBlock: null })
     this.panCapture = false
   }
 
-  deleteModeMove = ({x, y}) => {
+  deleteModeMove = ({ x, y }) => {
     let slideDistance = 50
     let moveY = y + this.activeBlockOffset.y - this._getActiveBlock().origin.y
     let adjustY = 0
@@ -290,10 +290,10 @@ class SortableGrid extends Component {
     else if (moveY > slideDistance) adjustY = moveY - slideDistance
     let deletionSwipePercent = (moveY - adjustY) / slideDistance * 100
     this._getActiveBlock().currentPosition.y.setValue(y - adjustY)
-    this.setState({deletionSwipePercent})
+    this.setState({ deletionSwipePercent })
   }
 
-  assessGridSize = ({nativeEvent}) => {
+  assessGridSize = ({ nativeEvent }) => {
     //console.log("Calculating grid size");
     if (this.props.itemWidth && this.props.itemWidth < nativeEvent.layout.width) {
       this.itemsPerRow = Math.floor(nativeEvent.layout.width / this.props.itemWidth)
@@ -319,7 +319,7 @@ class SortableGrid extends Component {
     if (this.state.blockWidth && oldRows != this.rows) this._animateGridHeight()
   }
 
-  saveBlockPositions = (key) => ({nativeEvent}) => {
+  saveBlockPositions = (key) => ({ nativeEvent }) => {
     let blockPositions = this.state.blockPositions
     if (!blockPositions[key]) {
       let blockPositionsSetCount = blockPositions[key] ? this.state.blockPositionsSetCount : ++this.state.blockPositionsSetCount
@@ -329,10 +329,10 @@ class SortableGrid extends Component {
       }
 
       blockPositions[key] = {
-        currentPosition : new Animated.ValueXY( thisPosition ),
-        origin          : thisPosition
+        currentPosition: new Animated.ValueXY(thisPosition),
+        origin: thisPosition
       }
-      this.setState({ blockPositions, blockPositionsSetCount  })
+      this.setState({ blockPositions, blockPositionsSetCount })
 
       if (this._blockPositionsSet()) {
         this.setGhostPositions()
@@ -358,17 +358,17 @@ class SortableGrid extends Component {
     let fullGridItemCount = this.rows * this.itemsPerRow
     let ghostBlockCount = fullGridItemCount - this.items.length
     let y = blockHeight * (this.rows - 1)
-    let initialX =  blockWidth * (this.itemsPerRow - ghostBlockCount)
+    let initialX = blockWidth * (this.itemsPerRow - ghostBlockCount)
 
     for (let i = 0; i < ghostBlockCount; ++i) {
       let x = initialX + blockWidth * i
-      this.ghostBlocks.push({x, y})
+      this.ghostBlocks.push({ x, y })
     }
   }
 
   activateDrag = (key) => () => {
     this.panCapture = true
-    this.onDragStart( this.itemOrder[key] )
+    this.onDragStart(this.itemOrder[key])
     this.setState({ activeBlock: key })
     this._defaultDragActivationWiggle()
   }
@@ -377,26 +377,33 @@ class SortableGrid extends Component {
     if (this.tapIgnore) this._resetTapIgnoreTime()
     else if (onDoubleTap != null) {
       this.doubleTapWait ? this._onDoubleTap(onDoubleTap) : this._onSingleTap(onTap)
-    } else onTap()
+    }
+    else onTap()
   }
 
   // Helpers & other boring stuff
 
-  _getActiveBlock = () => this.state.blockPositions[ this.state.activeBlock ]
+  _getActiveBlock = () => this.state.blockPositions[this.state.activeBlock]
 
-  _getBlock = (blockIndex) => this.state.blockPositions[ blockIndex ]
+  _getBlock = (blockIndex) => this.state.blockPositions[blockIndex]
 
   _blockPositionsSet = () => this.state.blockPositionsSetCount === this.items.length
 
-  _saveItemOrder = (items) => {
-    items.forEach( (item, index) => {
+  _saveItemOrder = (items, is_updated) => {
+    items.forEach((item, index) => {
+      if (is_updated) {
+        this.itemOrder.push({ key: item.key, ref: item.ref, order: index });
+        this.items.push(item);
+        return;
+      }
+
       const foundKey = _.findKey(this.itemOrder, oldItem => oldItem.key === item.key);
 
       if (foundKey) {
         this.items[foundKey] = item;
       }
       else {
-        this.itemOrder.push({ key: item.key, ref: item.ref, order: this.items.length });
+        this.itemOrder.push({ key: item.key, ref: item.ref, order: index });
         if (!this.initialLayoutDone) {
           this.items.push(item);
         }
@@ -405,8 +412,8 @@ class SortableGrid extends Component {
           let blockPositionsSetCount = ++this.state.blockPositionsSetCount
           let thisPosition = this.getNextBlockCoordinates()
           blockPositions.push({
-            currentPosition : new Animated.ValueXY( thisPosition ),
-            origin          : thisPosition
+            currentPosition: new Animated.ValueXY(thisPosition),
+            origin: thisPosition
           })
           this.items.push(item)
           this.setState({ blockPositions, blockPositionsSetCount })
@@ -418,7 +425,7 @@ class SortableGrid extends Component {
 
   _removeDisappearedChildren = (items) => {
     let deleteBlockIndices = []
-    _.cloneDeep(this.itemOrder).forEach( (item, index) => {
+    _.cloneDeep(this.itemOrder).forEach((item, index) => {
       if (!_.findKey(items, (oldItem) => oldItem.key === item.key)) {
         deleteBlockIndices.push(index)
       }
@@ -429,32 +436,32 @@ class SortableGrid extends Component {
   }
 
   deleteBlocks = (deleteBlockIndices) => {
-      let blockPositions = this.state.blockPositions
-      let blockPositionsSetCount = this.state.blockPositionsSetCount
-      _.sortBy(deleteBlockIndices, index => -index).forEach(index => {
-        --blockPositionsSetCount
-        let order = this.itemOrder[index].order
-        blockPositions.splice(index, 1)
-        this._fixItemOrderOnDeletion(this.itemOrder[index])
-        this.itemOrder.splice(index, 1)
-        this.items.splice(index, 1)
+    let blockPositions = this.state.blockPositions
+    let blockPositionsSetCount = this.state.blockPositionsSetCount
+    _.sortBy(deleteBlockIndices, index => -index).forEach(index => {
+      --blockPositionsSetCount
+      let order = this.itemOrder[index].order
+      blockPositions.splice(index, 1)
+      this._fixItemOrderOnDeletion(this.itemOrder[index])
+      this.itemOrder.splice(index, 1)
+      this.items.splice(index, 1)
+    })
+    this.setState({ blockPositions, blockPositionsSetCount }, () => {
+      this.items.forEach((item, order) => {
+        let blockIndex = _.findIndex(this.itemOrder, item => item.order === order)
+        let x = (order * this.state.blockWidth) % (this.itemsPerRow * this.state.blockWidth)
+        let y = Math.floor(order / this.itemsPerRow) * this.state.blockHeight
+        this.state.blockPositions[blockIndex].origin = { x, y }
+        this.animateBlockMove(blockIndex, { x, y })
       })
-      this.setState({ blockPositions, blockPositionsSetCount }, () => {
-        this.items.forEach( (item, order) => {
-          let blockIndex = _.findIndex(this.itemOrder, item => item.order === order)
-          let x = (order * this.state.blockWidth) % (this.itemsPerRow * this.state.blockWidth)
-          let y = Math.floor(order / this.itemsPerRow) * this.state.blockHeight
-          this.state.blockPositions[blockIndex].origin = {x, y}
-          this.animateBlockMove(blockIndex, {x, y})
-        })
-        this.setGhostPositions()
-      })
+      this.setGhostPositions()
+    })
   }
 
   _fixItemOrderOnDeletion = (orderItem) => {
     if (!orderItem) return false
     orderItem.order--
-    this._fixItemOrderOnDeletion(_.find(this.itemOrder, item => item.order === orderItem.order + 2))
+      this._fixItemOrderOnDeletion(_.find(this.itemOrder, item => item.order === orderItem.order + 2))
   }
 
   _animateGridHeight = () => {
@@ -463,8 +470,7 @@ class SortableGrid extends Component {
       this.state.gridHeight.setValue(this.gridHeightTarget)
     else if (this.state.gridHeight._value !== this.gridHeightTarget) {
       Animated.timing(
-        this.state.gridHeight,
-        {
+        this.state.gridHeight, {
           toValue: this.gridHeightTarget,
           duration: this.blockTransitionDuration
         }
@@ -475,7 +481,7 @@ class SortableGrid extends Component {
   _getDistanceTo = (point) => {
     let xDistance = this.dragPosition.x + this.activeBlockOffset.x - point.x
     let yDistance = this.dragPosition.y + this.activeBlockOffset.y - point.y
-    return Math.sqrt( Math.pow(xDistance, 2) + Math.pow(yDistance, 2) )
+    return Math.sqrt(Math.pow(xDistance, 2) + Math.pow(yDistance, 2))
   }
 
   _defaultDragActivationWiggle = () => {
@@ -491,10 +497,14 @@ class SortableGrid extends Component {
   }
 
   _blockActivationWiggle = () => {
-    return this.dragStartAnimation ||
-    { transform: [{ rotate: this.state.startDragWiggle.interpolate({
-      inputRange:  [0, 360],
-      outputRange: ['0 deg', '360 deg']})}]}
+    return this.dragStartAnimation || {
+      transform: [{
+        rotate: this.state.startDragWiggle.interpolate({
+          inputRange: [0, 360],
+          outputRange: ['0 deg', '360 deg']
+        })
+      }]
+    }
   }
 
   _assignReceivedPropertiesIntoThis(properties) {
@@ -507,7 +517,7 @@ class SortableGrid extends Component {
 
   _onSingleTap = (onTap) => {
     this.doubleTapWait = true
-    this.tapTimer = setTimeout( () => {
+    this.tapTimer = setTimeout(() => {
       this.doubleTapWait = false
       onTap()
     }, this.doubleTapTreshold)
@@ -527,15 +537,15 @@ class SortableGrid extends Component {
 
   createTouchHandlers = () =>
     this._panResponder = PanResponder.create({
-      onPanResponderTerminate:             (evt, gestureState) => {},
-      onStartShouldSetPanResponder:        (evt, gestureState) => true,
+      onPanResponderTerminate: (evt, gestureState) => {},
+      onStartShouldSetPanResponder: (evt, gestureState) => true,
       onStartShouldSetPanResponderCapture: (evt, gestureState) => false,
-      onMoveShouldSetPanResponder:         (evt, gestureState) => this.panCapture,
-      onMoveShouldSetPanResponderCapture:  (evt, gestureState) => this.panCapture,
-      onShouldBlockNativeResponder:        (evt, gestureState) => false,
-      onPanResponderTerminationRequest:    (evt, gestureState) => false,
-      onPanResponderGrant:   this.onActiveBlockIsSet(this.onStartDrag),
-      onPanResponderMove:    this.onActiveBlockIsSet(this.onMoveBlock),
+      onMoveShouldSetPanResponder: (evt, gestureState) => this.panCapture,
+      onMoveShouldSetPanResponderCapture: (evt, gestureState) => this.panCapture,
+      onShouldBlockNativeResponder: (evt, gestureState) => false,
+      onPanResponderTerminationRequest: (evt, gestureState) => false,
+      onPanResponderGrant: this.onActiveBlockIsSet(this.onStartDrag),
+      onPanResponderMove: this.onActiveBlockIsSet(this.onMoveBlock),
       onPanResponderRelease: this.onActiveBlockIsSet(this.onReleaseBlock)
     })
 
@@ -558,39 +568,36 @@ class SortableGrid extends Component {
 
   _getItemWrapperStyle = (key) => [
     { flex: 1 },
-       this.state.activeBlock == key
-    && this.state.deleteModeOn
-    && this._getBlock( key ).origin
-    &&
-    { opacity: 1.5 - this._getDynamicOpacity(key) }
+    this.state.activeBlock == key &&
+    this.state.deleteModeOn &&
+    this._getBlock(key).origin && { opacity: 1.5 - this._getDynamicOpacity(key) }
   ]
 
-  _getImageDeleteIconStyle = (key) => [
-    { position: 'absolute',
-      top: this.state.blockHeight/2 - 15,
-      left: this.state.blockWidth/2 - 15,
+  _getImageDeleteIconStyle = (key) => [{
+      position: 'absolute',
+      top: this.state.blockHeight / 2 - 15,
+      left: this.state.blockWidth / 2 - 15,
       width: 30,
       height: 30,
       opacity: .5
     },
-    this.state.activeBlock == key
-    && this._getBlock( key ).origin
-    &&
-    { opacity: .5 + this._getDynamicOpacity(key) }
+    this.state.activeBlock == key &&
+    this._getBlock(key).origin && { opacity: .5 + this._getDynamicOpacity(key) }
   ]
 
   _getDynamicOpacity = (key) =>
-    (   this._getBlock( key ).currentPosition.y._value
-      + this._getBlock( key ).currentPosition.y._offset
-      - this._getBlock( key ).origin.y
+    (this._getBlock(key).currentPosition.y._value +
+      this._getBlock(key).currentPosition.y._offset -
+      this._getBlock(key).origin.y
     ) / 50
 
-  _getBlockStyle = (key) => [
-    { width: this.state.blockWidth,
+  _getBlockStyle = (key) => [{
+      width: this.state.blockWidth,
       height: this.state.blockHeight,
-      justifyContent: 'center' },
-    this._blockPositionsSet() && (this.initialDragDone || this.state.deleteModeOn) &&
-    { position: 'absolute',
+      justifyContent: 'center'
+    },
+    this._blockPositionsSet() && (this.initialDragDone ||  this.state.deleteModeOn) && {
+      position: 'absolute',
       top: this._getBlock(key).currentPosition.getLayout().top,
       left: this._getBlock(key).currentPosition.getLayout().left
     },
@@ -602,8 +609,7 @@ class SortableGrid extends Component {
   ]
 }
 
-const styles = StyleSheet.create(
-{
+const styles = StyleSheet.create({
   sortableGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap'
